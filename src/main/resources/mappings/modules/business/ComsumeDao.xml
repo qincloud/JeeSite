@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.thinkgem.jeesite.modules.business.dao.ComsumeDao">
+	<insert id="insert">
+		INSERT INTO business_comsume(
+		id,
+		title,
+		rmb,
+		address,
+		category,
+		code,
+		time,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag
+		) VALUES (
+		#{id},
+		#{title},
+		#{rmb},
+		#{address},
+		#{category},
+		#{code},
+		#{time},
+		#{createBy.id},
+		#{createDate},
+		#{updateBy.id},
+		#{updateDate},
+		#{remarks},
+		#{delFlag}
+		)
+	</insert>
+
+	<select id="get" resultType="Comsume">
+		SELECT
+		*
+		FROM business_comsume
+		WHERE id
+		= #{id}
+	</select>
+
+	<select id="findAllList" resultType="Comsume">
+		SELECT
+		*
+		FROM business_comsume
+		WHERE del_flag = '0' ORDER BY time desc
+	</select>
+
+	<update id="update">
+		UPDATE business_comsume SET
+		title = #{title},
+		rmb =
+		#{rmb},
+		address = #{address},
+		category = #{category},
+		code = #{code},
+		time = #{time},
+		update_by = #{updateBy.id},
+		update_date = #{updateDate},
+		remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+	<update id="delete">
+		UPDATE business_comsume SET
+		del_flag =
+		#{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+
+	<select id="findList" resultType="Comsume">
+		SELECT
+		*
+		FROM business_comsume a
+		<where>
+			a.del_flag = #{delFlag}
+			<if test="title != null and title != ''">
+				AND a.title LIKE
+				<if test="dbName == 'oracle'">'%'||#{title}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{title}+'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{title}, '%')</if>
+			</if>
+			<if test="rmb != null and rmb != ''">
+				AND a.rmb LIKE
+				<if test="dbName == 'oracle'">'%'||#{rmb}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{rmb}+'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{rmb}, '%')</if>
+			</if>
+			<if test="address != null and address != ''">
+				AND a.address LIKE
+				<if test="dbName == 'oracle'">'%'||#{address}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{address}+'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{address}, '%')</if>
+			</if>
+			<if test="code != null and code != ''">
+				AND a.code LIKE
+				<if test="dbName == 'oracle'">#{code}||'%'</if>
+				<if test="dbName == 'mssql'">#{code}+'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('', #{code}, '%')</if>
+			</if>
+			<!-- ${sqlMap.dsf} -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="getConsumeSum" resultType="java.math.BigDecimal">
+		select sum(rmb) rmb from
+		business_comsume where code like '02%' and del_flag='0'
+	</select>
+
+	<select id="getIncomeSum" resultType="java.math.BigDecimal">
+		select sum(rmb) rmb from
+		business_comsume where code like '01%' and del_flag='0'
+	</select>
+
+	<resultMap id="selectMap" type="com.thinkgem.jeesite.modules.business.entity.Trable">
+		<result property="name" column="NAME" jdbcType="VARCHAR" />
+		<result property="code" column="CODE" jdbcType="VARCHAR" />
+		<result property="num" column="MONY" jdbcType="NUMERIC" />
+	</resultMap>
+
+	<select id="findConsumeCategory" resultMap="selectMap">
+		select
+		  category.categoryName NAME,
+		  category.categoryCode CODE,
+		  sum(case when comsume.rmb is not null then comsume.rmb else 0 end) MONY
+		from
+		  business_comsume_category category
+		left join
+		  business_comsume comsume
+		on
+		    comsume.del_flag = '0'
+		and comsume.code like concat(category.categoryCode,'%')
+		and comsume.time between #{0} and #{1}
+		where
+		    category.del_flag = '0'
+		and length(category.categoryCode) = 4
+		and category.categoryCode like '02%'
+		group by
+		    category.categoryName,
+		    category.categoryCode
+		order by
+		    category.categoryCode
+	</select>
+
+</mapper>
